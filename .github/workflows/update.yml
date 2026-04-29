@@ -1,12 +1,9 @@
-name: Aggiorna sito ogni 5 minuti
+name: Aggiorna sito
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '*/10 * * * *'
 
 permissions:
   contents: write
@@ -40,11 +37,10 @@ jobs:
           </html>
           EOF
 
-      - name: Commit e push
+      - name: Commit updated site
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
           git add index.html
-          git commit -m "Aggiornamento automatico sito" || exit 0
+          git commit -m "Auto update site" || echo "Nessuna modifica da salvare"
           git push
