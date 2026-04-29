@@ -1,0 +1,45 @@
+name: Aggiorna sito ogni 5 minuti
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-time:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clona repository
+        uses: actions/checkout@v4
+
+      - name: Aggiorna index.html
+        run: |
+          ORA=$(date +"%H:%M:%S")
+          DATA=$(date +"%d/%m/%Y")
+
+          cat <<EOF > index.html
+          <!DOCTYPE html>
+          <html lang="it">
+          <head>
+            <meta charset="UTF-8">
+            <title>Sito aggiornato</title>
+          </head>
+          <body>
+            <h1>Il sistema è stato aggiornato</h1>
+            <p>Alle ore: <strong>$ORA</strong></p>
+            <p>Del giorno: <strong>$DATA</strong></p>
+          </body>
+          </html>
+          EOF
+
+      - name: Commit modifiche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Aggiornamento automatico orario" || exit 0
+          git push
