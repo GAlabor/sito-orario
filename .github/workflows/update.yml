@@ -1,30 +1,45 @@
 name: Aggiorna sito ogni 5 minuti
 
+run-name: "${{ github.event_name }} - aggiornamento sito"
+
 on:
+  schedule:
+    - cron: "4/5 * * * *"
+      timezone: "Europe/Rome"
+  workflow_dispatch:
   push:
     branches:
       - main
-  schedule:
-    - cron: "2/5 * * * *"
-  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: aggiorna-sito
+  cancel-in-progress: true
 
 jobs:
   update-time:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug evento
+        run: |
+          echo "Evento: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Schedule: ${{ github.event.schedule }}"
+
       - name: Clona repository
         uses: actions/checkout@v5
+        with:
+          ref: main
 
       - name: Aggiorna index.html
         run: |
-          ORA=$(date +"%H:%M:%S")
-          DATA=$(date +"%d/%m/%Y")
+          ORA=$(TZ="Europe/Rome" date +"%H:%M:%S")
+          DATA=$(TZ="Europe/Rome" date +"%d/%m/%Y")
 
-          cat <<EOF > index.html
+          cat > index.html <<EOF
           <!DOCTYPE html>
           <html lang="it">
           <head>
@@ -35,6 +50,7 @@ jobs:
             <h1>Il sistema è stato aggiornato</h1>
             <p>Alle ore: <strong>$ORA</strong></p>
             <p>Del giorno: <strong>$DATA</strong></p>
+            <p>Evento GitHub Actions: <strong>${{ github.event_name }}</strong></p>
           </body>
           </html>
           EOF
@@ -43,6 +59,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add index.html
-          git commit -m "Aggiornamento automatico orario" || exit 0
+
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare"
+            exit 0
+          fi
+
+          git commit -m "Aggiornamento automatico sito"
           git push
